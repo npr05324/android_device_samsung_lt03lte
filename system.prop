@@ -1,26 +1,20 @@
 #
-# Samsung Galaxy Note 10.1 (2014) LTE
+# System properties for Samsung Galaxy Note 10.1 (2014) LTE (lt03lte / SM-P605S)
 #
 
 # Set WiFi interface
 wifi.interface=wlan0
 
 # Set vendor extensions library
-ro.vendor.extension_library=/vendor/lib/libqti-perfd-client.so
+ro.vendor.extension_library=libqti-perfd-client.so
 
 # Camera
 camera2.portability.force_api=1
 media.stagefright.legacyencoder=true
 media.stagefright.less-secure=true
 
-# Use custom RIL class
-ro.telephony.ril_class=LtlteRIL
-
-# Set number of elements expected in QUERY_AVAILABLE_NETWORKS
-ro.ril.telephony.mqanelements=6
-
-# Evolution RIL (8xxx)
-rild.libpath=/system/lib/libsec-ril.so
+# RIL (Samsung Qualcomm RIL)
+rild.libpath=/vendor/lib/libsec-ril.so
 rild.libargs=-d /dev/smd0
 persist.rild.nitz_plmn=
 persist.rild.nitz_long_ons_0=
@@ -50,11 +44,12 @@ persist.eons.enabled=true
 persist.radio.use_se_table_only=1
 
 persist.data.netmgrd.qos.enable=true
-
 persist.radio.jbims=1
 
-ro.telephony.default_network=0
-telephony.lteOnCdmaDevice=0
+# Default network: 9 (LTE / GSM / WCDMA auto)
+ro.telephony.default_network=9
+telephony.lteOnGsmDevice=1
+ro.telephony.ril.v3=newDialCode
 
 # Disable QMI logsmap
 persist.data.qmi.adb_logmask=0
