@@ -1,0 +1,45 @@
+diff --git a/packages/SettingsLib/src/com/android/settingslib/DeviceInfoUtils.java b/packages/SettingsLib/src/com/android/settingslib/DeviceInfoUtils.java
+index ff00fb32..e5d1285a 100644
+--- a/packages/SettingsLib/src/com/android/settingslib/DeviceInfoUtils.java
++++ b/packages/SettingsLib/src/com/android/settingslib/DeviceInfoUtils.java
+@@ -184,12 +184,29 @@ public class DeviceInfoUtils {
+             final String rawNumber = telephonyManager.createForSubscriptionId(
+                     subscriptionInfo.getSubscriptionId()).getLine1Number();
+             if (!TextUtils.isEmpty(rawNumber)) {
+-                formattedNumber = PhoneNumberUtils.formatNumber(rawNumber);
++                formattedNumber = formatNumberForSubscription(rawNumber, subscriptionInfo);
+             }
+         }
+         return formattedNumber;
+     }
+ 
++    /**
++     * Format a number using the subscription's country instead of the UI locale,
++     * so e.g. a Korean number is not given US (NANP) style hyphens on en-US.
++     */
++    private static String formatNumberForSubscription(String rawNumber,
++            SubscriptionInfo subscriptionInfo) {
++        final String countryIso = subscriptionInfo.getCountryIso();
++        if (!TextUtils.isEmpty(countryIso)) {
++            final String formatted = PhoneNumberUtils.formatNumber(rawNumber,
++                    countryIso.toUpperCase(Locale.ROOT));
++            if (formatted != null) {
++                return formatted;
++            }
++        }
++        return PhoneNumberUtils.formatNumber(rawNumber);
++    }
++
+     public static String getFormattedPhoneNumbers(Context context,
+             List<SubscriptionInfo> subscriptionInfoList) {
+         StringBuilder sb = new StringBuilder();
+@@ -201,7 +218,8 @@ public class DeviceInfoUtils {
+                 final String rawNumber = telephonyManager.createForSubscriptionId(
+                         subscriptionInfo.getSubscriptionId()).getLine1Number();
+                 if (!TextUtils.isEmpty(rawNumber)) {
+-                    sb.append(PhoneNumberUtils.formatNumber(rawNumber)).append("\n");
++                    sb.append(formatNumberForSubscription(rawNumber, subscriptionInfo))
++                            .append("\n");
+                 }
+             }
+         }

@@ -1,0 +1,14 @@
+diff --git a/modules/environment.cc b/modules/environment.cc
+index e63be71..ad9acbf 100644
+--- a/modules/environment.cc
++++ b/modules/environment.cc
+@@ -26,7 +26,8 @@ namespace modules {
+ bool IsLegacyDevice() {
+   return (!Variables::GetValue("ro.vndk.version").has_value() &&
+           !Variables::GetValue("ro.vndk.lite").has_value()) ||
+-         Variables::GetValue("ro.treble.enabled") == "false";
++         Variables::GetValue("ro.treble.enabled") == "false" ||
++         Variables::GetValue("ro.vndk.lite") == "true";
+ }
+ 
+ bool IsVndkLiteDevice() {

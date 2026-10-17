@@ -1,0 +1,28 @@
+diff --git a/src/upio.c b/src/upio.c
+index 1a88e28..e4e8d0b 100644
+--- a/src/upio.c
++++ b/src/upio.c
+@@ -214,14 +214,17 @@ static void proc_btwrite_timeout(union sigval arg)
+ void upio_start_stop_timer(int action) {
+     struct itimerspec ts;
+ 
++    if (lpm_proc_cb.timer_created != TRUE) {
++        /* Timer has not been instantiated yet; do not call timer_settime */
++        return;
++    }
++
+     if (action == UPIO_ASSERT) {
+         lpm_proc_cb.btwrite_active = TRUE;
+-        if (lpm_proc_cb.timer_created == TRUE) {
+-            ts.it_value.tv_sec = PROC_BTWRITE_TIMER_TIMEOUT_MS/1000;
+-            ts.it_value.tv_nsec = 1000000*(PROC_BTWRITE_TIMER_TIMEOUT_MS%1000);
+-            ts.it_interval.tv_sec = 0;
+-            ts.it_interval.tv_nsec = 0;
+-        }
++        ts.it_value.tv_sec = PROC_BTWRITE_TIMER_TIMEOUT_MS/1000;
++        ts.it_value.tv_nsec = 1000000*(PROC_BTWRITE_TIMER_TIMEOUT_MS%1000);
++        ts.it_interval.tv_sec = 0;
++        ts.it_interval.tv_nsec = 0;
+     } else {
+         /* unarm timer if writing 0 to lpm; reduce unnecessary user space wakeup */
+         memset(&ts, 0, sizeof(ts));

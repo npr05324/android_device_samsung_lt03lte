@@ -1,0 +1,30 @@
+diff --git a/src/com/android/camera/PhotoModule.java b/src/com/android/camera/PhotoModule.java
+index fb988b4..de192b3 100755
+--- a/src/com/android/camera/PhotoModule.java
++++ b/src/com/android/camera/PhotoModule.java
+@@ -1789,7 +1789,9 @@ public class PhotoModule
+         }
+ 
+         // Set rotation and gps data.
+-        int orientation = (mOrientation + mOrientationOffset) % 360;
++        // Until the orientation listener reports, assume the natural orientation
++        int orientation = mOrientation == OrientationEventListener.ORIENTATION_UNKNOWN
++                ? 0 : (mOrientation + mOrientationOffset) % 360;
+         mJpegRotation = CameraUtil.getJpegRotation(mCameraId, orientation);
+         String pictureFormat = mParameters.get(KEY_PICTURE_FORMAT);
+         Location loc = getLocationAccordPictureFormat(pictureFormat);
+diff --git a/src/com/android/camera/VideoModule.java b/src/com/android/camera/VideoModule.java
+index d4b8664..1e8cdb4 100755
+--- a/src/com/android/camera/VideoModule.java
++++ b/src/com/android/camera/VideoModule.java
+@@ -683,7 +683,9 @@ public class VideoModule implements CameraModule,
+             }
+ 
+             // Set rotation and gps data.
+-            int orientation = (mOrientation + mOrientationOffset) % 360;
++            // Until the orientation listener reports, assume the natural orientation
++            int orientation = mOrientation == OrientationEventListener.ORIENTATION_UNKNOWN
++                    ? 0 : (mOrientation + mOrientationOffset) % 360;
+             int rotation = CameraUtil.getJpegRotation(mCameraId, orientation);
+             mParameters.setRotation(rotation);
+             Location loc = mLocationManager.getCurrentLocation();
