@@ -15,7 +15,7 @@
 #
 
 PRODUCT_MAKEFILES := \
-    $(LOCAL_PATH)/lineage_lt03lte.mk
+    $(LOCAL_DIR)/lineage_lt03lte.mk
 
 COMMON_LUNCH_CHOICES := \
     lineage_lt03lte-userdebug \

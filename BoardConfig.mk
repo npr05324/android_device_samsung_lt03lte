@@ -40,7 +40,7 @@ TARGET_BOOTLOADER_BOARD_NAME := MSM8974
 
 # Kernel
 BOARD_KERNEL_BASE := 0x00000000
-BOARD_KERNEL_CMDLINE := console=null androidboot.hardware=qcom user_debug=23 msm_rtb.filter=0x37 ehci-hcd.park=3 androidboot.selinux=permissive
+BOARD_KERNEL_CMDLINE := console=null androidboot.hardware=qcom msm_rtb.filter=0x37 ehci-hcd.park=3
 BOARD_KERNEL_IMAGE_NAME := zImage
 BOARD_KERNEL_PAGESIZE := 2048
 BOARD_KERNEL_SEPARATED_DT := true
@@ -50,6 +50,9 @@ BOARD_CUSTOM_BOOTIMG := true
 BOARD_CUSTOM_BOOTIMG_MK := hardware/samsung/mkbootimg.mk
 TARGET_KERNEL_CONFIG := lineage_lt03lte_skt_defconfig
 TARGET_KERNEL_SOURCE := kernel/samsung/msm8974
+# Release kernel name comes from CONFIG_LOCALVERSION (-KNPA-GOV); an explicit
+# empty LOCALVERSION keeps setlocalversion from appending "+" for local changes
+TARGET_KERNEL_ADDITIONAL_FLAGS := LOCALVERSION=
 
 # Audio
 AUDIO_FEATURE_LOW_LATENCY_PRIMARY := true
