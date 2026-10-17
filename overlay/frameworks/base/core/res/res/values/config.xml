@@ -215,6 +215,9 @@
     <!-- Disable the home key unlock setting -->
     <!-- <bool name="config_disableHomeUnlockSetting">false</bool> -->
 
+    <!-- Whether the home key can be used to wake the device. -->
+    <bool name="config_wakeOnHomeKeyAvailable">true</bool>
+
     <!-- Hardware 'face' keys present on the device, stored as a bit field.
          This integer should equal the sum of the corresponding value for each
          of the following keys present:
@@ -223,8 +226,9 @@
              4 - Menu
              8 - Assistant (search)
             16 - App switch
-         For example, a device with Home, Back and Menu keys would set this
-         config to 7. -->
+         For example, a device with Home, Back, Menu and App Switch keys sets this
+         config to 1 + 2 + 4 + 16 = 23. -->
+    <!-- lt03lte: Home, Back and Menu (no app switch key) -->
     <integer name="config_deviceHardwareKeys">7</integer>
 
     <!-- Configure mobile tcp buffer sizes in the form:
@@ -266,18 +270,6 @@
     <bool name="config_stylusGestures">true</bool> -->
 
     <bool name="config_hotswapCapable">true</bool>
-
-    <!-- Hardware 'face' keys present on the device, stored as a bit field.
-         This integer should equal the sum of the corresponding value for each
-         of the following keys present:
-             1 - Home
-             2 - Back
-             4 - Menu
-             8 - Assistant (search)
-            16 - App switch
-         For example, a device with Home, Back and Menu keys would set this
-         config to 7. -->
-    <integer name="config_deviceHardwareKeys">7</integer>
 
     <!-- enable doze powersaving mode -->
     <bool name="config_enableAutoPowerModes">true</bool>

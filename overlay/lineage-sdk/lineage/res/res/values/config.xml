@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- Hardware keys present on the device, stored as a bit field:
+         1: Home, 2: Back, 4: Menu, 64: Volume rocker -> 71 -->
+    <integer name="config_deviceHardwareKeys">71</integer>
+</resources>
