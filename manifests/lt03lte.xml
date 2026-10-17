@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+     Local manifest for LineageOS 18.1 on the Samsung Galaxy Note 10.1 2014 LTE
+     (SM-P605S, lt03lte). Copy to .repo/local_manifests/ and repo sync.
+
+     vendor/samsung/lt03lte is not hosted: generate it with
+     device/samsung/lt03lte/extract-files.sh (see Readme_Android.md).
+-->
+<manifest>
+  <remote name="npr05324" fetch="https://github.com/npr05324" />
+
+  <project path="device/samsung/lt03lte" name="android_device_samsung_lt03lte" remote="npr05324" revision="lineage-18.1" />
+  <project path="device/samsung/msm8974-common" name="android_device_samsung_msm8974-common" remote="npr05324" revision="lineage-18.1" />
+  <project path="device/samsung/qcom-common" name="android_device_samsung_qcom-common" remote="npr05324" revision="lineage-18.1" />
+  <project path="kernel/samsung/msm8974" name="android_kernel_samsung_msm8974" remote="npr05324" revision="lineage-18.1" />
+
+  <project path="hardware/samsung" name="LineageOS/android_hardware_samsung" remote="github" revision="lineage-18.1" />
+
+  <!-- Common msm8974 Samsung blobs (third party repository) -->
+  <project path="vendor/samsung/msm8974-common" name="JLST-SM-MSM8974/proprietary_vendor_samsung_msm8974-common" remote="github" revision="lineage-18.1" />
+</manifest>
