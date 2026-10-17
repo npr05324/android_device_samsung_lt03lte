@@ -1,0 +1,27 @@
+//
+// Copyright (C) 2026 The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+python_binary_host {
+    name: "lt03lte_patch_apns",
+    main: "patch_apns.py",
+    srcs: ["patch_apns.py"],
+    version: {
+        py2: {
+            enabled: false,
+        },
+        py3: {
+            enabled: true,
+            embedded_launcher: true,
+        },
+    },
+}
+
+genrule {
+    name: "apns-conf_lt03lte",
+    out: ["apns-conf.xml"],
+    srcs: [":apns-conf"],
+    tools: ["lt03lte_patch_apns"],
+    cmd: "$(location lt03lte_patch_apns) $(in) $(out)",
+}

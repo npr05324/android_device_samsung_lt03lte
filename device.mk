@@ -88,7 +88,21 @@ PRODUCT_PACKAGES += \
 
 # Shims
 PRODUCT_PACKAGES += \
-    libshim_binder
+    libshim_binder \
+    libshim_atomic \
+    libshim_secril
+
+# APN (SKT tweaks on top of vendor/apn)
+PRODUCT_PACKAGES += \
+    apns-conf.xml_lt03lte
+
+# Telephony / RIL packages
+PRODUCT_PACKAGES += \
+    android.hardware.radio@1.1 \
+    android.hardware.radio.deprecated@1.0 \
+    rild \
+    libril
+
 
 # Wi-Fi
 PRODUCT_PACKAGES += \

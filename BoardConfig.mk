@@ -88,7 +88,14 @@ TARGET_INIT_VENDOR_LIB := libinit_lt03lte
 # Legacy BLOB Support
 TARGET_LD_SHIM_LIBS += \
     /system/vendor/lib/hw/camera.vendor.msm8974.so|libshim_camera.so \
-    /system/vendor/lib/libperipheral_client.so|libshim_binder.so
+    /system/vendor/lib/libperipheral_client.so|libshim_binder.so \
+    /system/vendor/bin/mpdecision|libshim_atomic.so \
+    /system/vendor/lib/libsec-ril.gsm.so|libshim_secril.so \
+    /system/vendor/lib/libsec-ril.so|libshim_secril.so \
+    /vendor/lib/libsec-ril.gsm.so|libshim_secril.so \
+    /vendor/lib/libsec-ril.so|libshim_secril.so \
+    /system/lib/libsec-ril.gsm.so|libshim_secril.so \
+    /system/lib/libsec-ril.so|libshim_secril.so
 
 TARGET_PROCESS_SDK_VERSION_OVERRIDE += \
     /system/bin/mediaserver=22 \
@@ -101,6 +108,8 @@ TARGET_SYSTEM_PROP += device/samsung/lt03lte/system.prop
 
 # Radio
 BOARD_PROVIDES_LIBRIL := true
+SIM_COUNT := 1
+DEVICE_MANIFEST_FILE += $(LOCAL_PATH)/manifest.xml
 
 # Recovery
 TARGET_RECOVERY_DENSITY := xhdpi

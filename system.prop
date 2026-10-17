@@ -14,8 +14,10 @@ media.stagefright.legacyencoder=true
 media.stagefright.less-secure=true
 
 # RIL (Samsung Qualcomm RIL)
-rild.libpath=/vendor/lib/libsec-ril.so
+rild.libpath=/system/vendor/lib/libsec-ril.gsm.so
 rild.libargs=-d /dev/smd0
+ro.ril.telephony.mqanelements=6
+ro.telephony.call_ring.multiple=0
 persist.rild.nitz_plmn=
 persist.rild.nitz_long_ons_0=
 persist.rild.nitz_long_ons_1=
@@ -26,6 +28,14 @@ persist.rild.nitz_short_ons_1=
 persist.rild.nitz_short_ons_2=
 persist.rild.nitz_short_ons_3=
 ril.subscription.types=NV,RUIM
+
+# GSM/LTE only: don't forward CDMA subscription source (RTRE) changes,
+# they crash the modem on the next LPM -> online transition
+ro.vendor.ril.ignore_cdma_subscription_source=true
+
+# Answer BASEBAND_VERSION from ril.sw_ver so libsec-ril doesn't re-run
+# InitMiscInformation() (factory IPCs) against an already running modem
+ro.vendor.ril.cache_baseband_version=true
 DEVICE_PROVISIONED=1
 
 # Keep SIM state on LPM mode
