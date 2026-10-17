@@ -39,7 +39,7 @@ on fs
     write /sys/devices/msm_sdcc.1/mmc_host/mmc1/power/control on
     write /sys/devices/msm_sdcc.3/mmc_host/mmc2/power/control on
 
-    mount_all fstab.qcom
+    mount_all /vendor/etc/fstab.qcom
 
     setprop ro.crypto.fuse_sdcard true
 
@@ -48,11 +48,9 @@ on fs
     # results in failure to launch late-start class.
 
     wait /dev/block/platform/msm_sdcc.1/by-name/persist
-    check_fs /dev/block/platform/msm_sdcc.1/by-name/persist ext4
     mount ext4 /dev/block/platform/msm_sdcc.1/by-name/persist /persist nosuid nodev noatime data=ordered,nomblk_io_submit,noauto_da_alloc,errors=panic
 
     wait /dev/block/platform/msm_sdcc.1/by-name/efs
-    check_fs /dev/block/platform/msm_sdcc.1/by-name/efs ext4
     mount ext4 /dev/block/platform/msm_sdcc.1/by-name/efs /efs nosuid nodev noatime data=ordered,nomblk_io_submit,noauto_da_alloc,errors=panic
     chown system radio /efs
      chmod 0771 /efs

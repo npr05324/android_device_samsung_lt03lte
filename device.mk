@@ -80,7 +80,19 @@ PRODUCT_COPY_FILES += \
 
 # Ramdisk
 PRODUCT_PACKAGES += \
-    fstab.qcom
+    fstab.qcom \
+    init.qcom.rc \
+    init.qcom.usb.rc \
+    init.target.rc \
+    ueventd.qcom.rc
+
+# Shims
+PRODUCT_PACKAGES += \
+    libshim_binder
+
+# ConfigStore
+PRODUCT_PACKAGES += \
+    android.hardware.configstore@1.1-service
 
 # Sensors
 PRODUCT_COPY_FILES += \

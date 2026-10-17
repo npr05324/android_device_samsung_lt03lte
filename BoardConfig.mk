@@ -18,19 +18,29 @@
 # Inherit from common msm8974
 include device/samsung/msm8974-common/BoardConfigCommon.mk
 
+# Android 11 Legacy Compatibility
+BUILD_BROKEN_USES_BUILD_COPY_HEADERS := true
+BUILD_BROKEN_DUP_RULES := true
+BUILD_BROKEN_PREBUILT_ELF_FILES := true
+BUILD_BROKEN_OUTSIDE_INCLUDE_DIRS := true
+BUILD_BROKEN_VINTF_PRODUCT_COPY_FILES := true
+
+# Display / Lights
+TARGET_PROVIDES_LIBLIGHT := true
+
 LOCAL_PATH := device/samsung/lt03lte
 
 TARGET_SPECIFIC_HEADER_PATH := $(LOCAL_PATH)/include
 
 # Assert
-TARGET_OTA_ASSERT_DEVICE := lt03lte,lt03lteskt,lt03ltesks,lt03ltexx,SM-P605S,SM-P605
+TARGET_OTA_ASSERT_DEVICE := lt03lte,lt03lteskt,lt03ltesks,lt03ltexx,SM-P605S,SM-P605,
 
 # Bootloader
 TARGET_BOOTLOADER_BOARD_NAME := MSM8974
 
 # Kernel
 BOARD_KERNEL_BASE := 0x00000000
-BOARD_KERNEL_CMDLINE := console=null androidboot.hardware=qcom user_debug=23 msm_rtb.filter=0x37 ehci-hcd.park=3
+BOARD_KERNEL_CMDLINE := console=null androidboot.hardware=qcom user_debug=23 msm_rtb.filter=0x37 ehci-hcd.park=3 androidboot.selinux=permissive
 BOARD_KERNEL_IMAGE_NAME := zImage
 BOARD_KERNEL_PAGESIZE := 2048
 BOARD_KERNEL_SEPARATED_DT := true
@@ -87,7 +97,7 @@ TARGET_PROCESS_SDK_VERSION_OVERRIDE += \
     /system/vendor/bin/hw/rild=27
 
 # Properties
-TARGET_SYSTEM_PROP += $(LOCAL_PATH)/system.prop
+TARGET_SYSTEM_PROP += device/samsung/lt03lte/system.prop
 
 # Radio
 BOARD_PROVIDES_LIBRIL := true
