@@ -102,6 +102,10 @@ PRODUCT_PACKAGES += \
     libshim_atomic \
     libshim_secril
 
+# Device settings (battery care)
+PRODUCT_PACKAGES += \
+    Lt03lteParts
+
 # APN (SKT tweaks on top of vendor/apn)
 PRODUCT_PACKAGES += \
     apns-conf.xml_lt03lte

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <string name="app_name">Device settings</string>
+
+    <string name="battery_care_title">Battery care</string>
+    <string name="battery_care_summary">Charge limit, battery health and cycles</string>
+
+    <string name="charge_limit_category">Charging</string>
+    <string name="charge_limit_enable_title">Limit maximum charge</string>
+    <string name="charge_limit_enable_summary">Stop charging at the level below to reduce wear when the tablet stays plugged in</string>
+    <string name="charge_limit_level_title">Maximum charge level</string>
+    <string name="charge_limit_level_summary">Stop at %1$d%%, resume below %2$d%%</string>
+
+    <string name="battery_info_category">Battery information</string>
+    <string name="battery_health_title">Health (SOH)</string>
+    <string name="battery_cycles_title">Charge cycles</string>
+    <string name="battery_capacity_title">Full capacity</string>
+    <string name="battery_capacity_summary">%1$d mAh of %2$d mAh design</string>
+    <string name="battery_level_title">Charge level</string>
+    <string name="battery_status_title">Status</string>
+    <string name="battery_temp_title">Temperature</string>
+    <string name="battery_voltage_title">Voltage</string>
+    <string name="battery_info_note">Health and cycles are estimated by the battery fuel gauge and reset if the battery is disconnected.</string>
+    <string name="unavailable">Unavailable</string>
+
+    <string name="status_charging">Charging</string>
+    <string name="status_discharging">Discharging</string>
+    <string name="status_not_charging">Not charging (limit reached)</string>
+    <string name="status_full">Full</string>
+    <string name="status_unknown">Unknown</string>
+</resources>

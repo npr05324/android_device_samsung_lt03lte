@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/charge_limit_category">
+        <SwitchPreference
+            android:key="charge_limit_enable"
+            android:title="@string/charge_limit_enable_title"
+            android:summary="@string/charge_limit_enable_summary"
+            android:defaultValue="false" />
+        <ListPreference
+            android:key="charge_limit_level"
+            android:title="@string/charge_limit_level_title"
+            android:dependency="charge_limit_enable"
+            android:entries="@array/charge_limit_entries"
+            android:entryValues="@array/charge_limit_values"
+            android:defaultValue="80" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/battery_info_category">
+        <Preference android:key="battery_health" android:title="@string/battery_health_title" android:selectable="false" />
+        <Preference android:key="battery_cycles" android:title="@string/battery_cycles_title" android:selectable="false" />
+        <Preference android:key="battery_capacity" android:title="@string/battery_capacity_title" android:selectable="false" />
+        <Preference android:key="battery_level" android:title="@string/battery_level_title" android:selectable="false" />
+        <Preference android:key="battery_status" android:title="@string/battery_status_title" android:selectable="false" />
+        <Preference android:key="battery_temp" android:title="@string/battery_temp_title" android:selectable="false" />
+        <Preference android:key="battery_voltage" android:title="@string/battery_voltage_title" android:selectable="false" />
+        <Preference android:key="battery_note" android:summary="@string/battery_info_note" android:selectable="false" />
+    </PreferenceCategory>
+</PreferenceScreen>
