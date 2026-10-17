@@ -12,3 +12,8 @@ FW_PATCH_SETTLEMENT_DELAY_MS = 100
 USE_AXI_BRIDGE_LOCK = TRUE
 UART_FORCE_TWO_STOPBITS = TRUE
 LPM_COMBINE_SLEEP_MODE_AND_LPM = 0
+# Treble's bluetooth HAL never issues BT_VND_OP_SCO_CFG; configure SCO PCM
+# routing at the end of firmware setup instead, or call audio never reaches the PCM bus
+BTHW_FW_EXTENDED_CONFIGURATION = TRUE
+# Runtime config lives on /vendor (Treble HAL), not /system/etc
+VENDOR_LIB_CONF_FILE = "/vendor/etc/bluetooth/bt_vendor.conf"
