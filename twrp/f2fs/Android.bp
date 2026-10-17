@@ -1,0 +1,84 @@
+//
+// Copyright (C) 2026 The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+// Static f2fs-tools for the lt03lte TWRP ramdisk (Android 6 based, ships
+// its own old bionic and no f2fs userspace). src -> external/f2fs-tools.
+//
+
+cc_defaults {
+    name: "lt03lte_twrp_f2fs_defaults",
+    static_executable: true,
+    stl: "libc++_static",
+    cflags: [
+        "-DF2FS_MAJOR_VERSION=1",
+        "-DF2FS_MINOR_VERSION=13",
+        "-DF2FS_TOOLS_VERSION=\"1.13.0\"",
+        "-DF2FS_TOOLS_DATE=\"2019-09-24\"",
+        "-DWITH_ANDROID",
+        "-Wall",
+        "-Werror",
+        "-Wno-format",
+        "-Wno-macro-redefined",
+        "-Wno-missing-field-initializers",
+        "-Wno-pointer-arith",
+        "-Wno-sign-compare",
+        "-Wno-unused-function",
+        "-Wno-string-plus-int",
+    ],
+    include_dirs: [
+        "external/f2fs-tools/include",
+        "external/f2fs-tools/mkfs",
+        "external/f2fs-tools/fsck",
+        "external/e2fsprogs/lib/",
+        "system/core/libsparse/include",
+    ],
+    static_libs: [
+        "libext2_uuid",
+        "libsparse",
+        "libbase",
+        "libz",
+        "liblog",
+    ],
+}
+
+cc_binary {
+    name: "lt03lte_twrp_mkfs.f2fs",
+    defaults: ["lt03lte_twrp_f2fs_defaults"],
+    cflags: ["-DWITH_BLKDISCARD"],
+    srcs: [
+        "src/lib/libf2fs.c",
+        "src/lib/libf2fs_io.c",
+        "src/lib/libf2fs_zoned.c",
+        "src/lib/nls_utf8.c",
+        "src/mkfs/f2fs_format.c",
+        "src/mkfs/f2fs_format_utils.c",
+        "src/mkfs/f2fs_format_main.c",
+    ],
+}
+
+cc_binary {
+    name: "lt03lte_twrp_fsck.f2fs",
+    defaults: ["lt03lte_twrp_f2fs_defaults"],
+    cflags: ["-DWITH_RESIZE", "-DWITH_DEFRAG", "-DWITH_DUMP"],
+    srcs: [
+        "src/fsck/dir.c",
+        "src/fsck/dict.c",
+        "src/fsck/mkquota.c",
+        "src/fsck/quotaio.c",
+        "src/fsck/quotaio_tree.c",
+        "src/fsck/quotaio_v2.c",
+        "src/fsck/node.c",
+        "src/fsck/segment.c",
+        "src/fsck/xattr.c",
+        "src/fsck/main.c",
+        "src/fsck/mount.c",
+        "src/fsck/dump.c",
+        "src/fsck/fsck.c",
+        "src/fsck/resize.c",
+        "src/fsck/defrag.c",
+        "src/lib/libf2fs.c",
+        "src/lib/libf2fs_io.c",
+        "src/lib/nls_utf8.c",
+    ],
+}

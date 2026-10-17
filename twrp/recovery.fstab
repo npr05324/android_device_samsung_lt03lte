@@ -1,0 +1,17 @@
+# Custom recovery fstab for Samsung Galaxy Note 10.1 2014 LTE (lt03lte / SM-P605S)
+# Strict partition alignment based on eMMC 32GB partition map (MSM8974.pit)
+/boot		emmc	/dev/block/platform/msm_sdcc.1/by-name/boot
+/recovery	emmc	/dev/block/platform/msm_sdcc.1/by-name/recovery
+/system		ext4	/dev/block/platform/msm_sdcc.1/by-name/system
+/data		f2fs	/dev/block/platform/msm_sdcc.1/by-name/userdata	flags=encryptable=footer;length=-16384
+/cache		ext4	/dev/block/platform/msm_sdcc.1/by-name/cache
+/efs		ext4	/dev/block/platform/msm_sdcc.1/by-name/efs		flags=backup=1;display="EFS (Critical)"
+/modem		emmc	/dev/block/platform/msm_sdcc.1/by-name/modem	flags=backup=1;display="Modem"
+/modemst1	emmc	/dev/block/platform/msm_sdcc.1/by-name/modemst1	flags=backup=1;subpartitionof=/efs
+/modemst2	emmc	/dev/block/platform/msm_sdcc.1/by-name/modemst2	flags=backup=1;subpartitionof=/efs
+/fsg		emmc	/dev/block/platform/msm_sdcc.1/by-name/fsg		flags=backup=1;subpartitionof=/efs
+/persist	ext4	/dev/block/platform/msm_sdcc.1/by-name/persist	flags=backup=1;display="Persist (WiFi/BT/Sensors)"
+/firmware	vfat	/dev/block/platform/msm_sdcc.1/by-name/apnhlos	flags=backup=1;subpartitionof=/modem;mounttodecrypt;fsflags=ro,context=u:object_r:firmware_file:s0
+/misc		emmc	/dev/block/platform/msm_sdcc.1/by-name/fota
+/external_sd	vfat	/dev/block/mmcblk1p1 /dev/block/mmcblk1			flags=display="Micro SDcard";storage;wipeingui;removable
+/usbstorage	vfat	/dev/block/sda1 /dev/block/sda					flags=display="USB Storage";storage;wipeingui;removable
