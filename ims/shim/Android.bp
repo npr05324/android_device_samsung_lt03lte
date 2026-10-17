@@ -1,0 +1,7 @@
+cc_library_shared {
+    name: "libsecims_shim",
+    srcs: ["secims_shim.cpp"],
+    shared_libs: ["libutils"],
+    cflags: ["-Wno-unused-parameter"],
+    vendor: true,
+}

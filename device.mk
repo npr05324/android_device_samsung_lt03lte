@@ -127,3 +127,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
 
 # Common msm8974
 $(call inherit-product, device/samsung/msm8974-common/msm8974.mk)
+
+# Samsung IMS stack (VoLTE); products without the Android framework can turn it off
+TARGET_INCLUDE_SECIMS ?= true
+$(call inherit-product, device/samsung/lt03lte/ims/ims.mk)
