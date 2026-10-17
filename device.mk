@@ -90,6 +90,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     libshim_binder
 
+# Wi-Fi
+PRODUCT_PACKAGES += \
+    macloader
+
 # ConfigStore
 PRODUCT_PACKAGES += \
     android.hardware.configstore@1.1-service
