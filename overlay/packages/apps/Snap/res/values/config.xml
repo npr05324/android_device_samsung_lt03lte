@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- The front camera HAL only does non-ZSL snapshots and stops preview
+         after each capture; restart it or the next shot fails (-ENOSYS). -->
+    <bool name="front_camera_restart_preview_onPictureTaken">true</bool>
+</resources>
