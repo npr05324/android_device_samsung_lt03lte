@@ -1,0 +1,6 @@
+# libsec-ril follows the telephony provider database symlinks
+allow rild radio_data_file:lnk_file getattr;
+
+# libsec-ril identifies its "Multiclient" socket peers via /proc/<pid>/cmdline
+allow rild system_app:dir search;
+allow rild system_app:file r_file_perms;

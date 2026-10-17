@@ -1,0 +1,4 @@
+get_prop(mediaserver, exported_camera_prop)
+
+# Legacy camera JPEG blob (libmmjpeg.so) has text relocations
+allow mediaserver system_lib_file:file execmod;

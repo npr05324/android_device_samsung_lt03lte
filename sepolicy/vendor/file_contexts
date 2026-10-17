@@ -1,0 +1,10 @@
+# Sensors (AKM compass calibration, created by the sensors HAL)
+/data/misc/akmd_set\.txt        u:object_r:sensors_data_file:s0
+
+# EFS subdirectories that Samsung's stock firmware labels with types unknown
+# to this policy (app_efs_file, imei_efs_file, ...); listing them makes the
+# boot time restorecon of /efs relabel them.
+/efs/FactoryApp(/.*)?           u:object_r:efs_file:s0
+/efs/imei(/.*)?                 u:object_r:efs_file:s0
+/efs/Battery(/.*)?              u:object_r:efs_file:s0
+/efs/drm(/.*)?                  u:object_r:efs_file:s0

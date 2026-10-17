@@ -1,0 +1,5 @@
+# Panel / backlight (lt03lte eDP bridge on i2c-24)
+genfscon sysfs /devices/i2c.92/i2c-24/24-0030/lcd/panel u:object_r:sysfs_graphics:s0
+
+# zRAM tuning
+genfscon proc /sys/vm/swappiness u:object_r:proc_swappiness:s0

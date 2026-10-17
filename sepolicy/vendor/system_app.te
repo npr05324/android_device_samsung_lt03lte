@@ -1,0 +1,18 @@
+# Samsung IMS stack (com.sec.imsservice etc.) runs as the system uid
+
+# Publishes the "ims" service
+allow system_app radio_service:service_manager add;
+
+# Talks to libsec-ril over its "Multiclient" socket
+allow system_app rild:unix_stream_socket connectto;
+
+# Legacy IMS JNI blob (libSECIMSJni.so) has text relocations
+allow system_app system_lib_file:file execmod;
+
+# Native wake locks through the system suspend HAL (no CAP_BLOCK_SUSPEND for apps)
+allow system_app system_suspend_hwservice:hwservice_manager find;
+binder_call(system_app, system_suspend_server)
+
+# VolteSettings probes /efs; apps may not read it (neverallow), it falls back
+# to ro.csc.sales_code
+dontaudit system_app efs_file:dir search;

@@ -1,0 +1,3 @@
+# AKM compass calibration lives at /data/misc/akmd_set.txt (blob hardcoded)
+allow hal_sensors_default system_data_file:dir rw_dir_perms;
+type_transition hal_sensors_default system_data_file:file sensors_data_file "akmd_set.txt";

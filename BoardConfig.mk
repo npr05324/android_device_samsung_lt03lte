@@ -124,3 +124,14 @@ WIFI_HIDL_UNIFIED_SUPPLICANT_SERVICE_RC_ENTRY := true
 
 # Inherit from the proprietary version
 -include vendor/samsung/lt03lte/BoardConfigVendor.mk
+
+# SELinux
+BOARD_VENDOR_SEPOLICY_DIRS += device/samsung/lt03lte/sepolicy/vendor
+# The msm8974 qcom legacy policy (device/qcom/sepolicy-legacy) predates the
+# Android 11 neverallow set (dir/file ioctl whitelists etc.) and only builds with
+# the neverallow check skipped; it already does so for userdebug. The runtime
+# policy is identical and enforcing. Needs patches/system/sepolicy.
+ifeq ($(TARGET_BUILD_VARIANT),user)
+SELINUX_IGNORE_NEVERALLOWS := true
+SELINUX_IGNORE_NEVERALLOWS_ON_USER := true
+endif

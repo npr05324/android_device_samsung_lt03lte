@@ -1,0 +1,5 @@
+allow vendor_init proc_swappiness:file w_file_perms;
+
+# Relabel /efs content left with stock-only (unmapped) labels
+allow vendor_init unlabeled:dir { getattr search setattr relabelfrom };
+allow vendor_init unlabeled:file { getattr setattr relabelfrom };

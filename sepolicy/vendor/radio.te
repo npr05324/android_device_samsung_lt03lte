@@ -1,0 +1,4 @@
+# Samsung telephony/IMS framework code enumerates services and probes the
+# Samsung-only "phoneext" service (not present on this ROM)
+allow radio servicemanager:service_manager list;
+dontaudit radio default_android_service:service_manager find;
