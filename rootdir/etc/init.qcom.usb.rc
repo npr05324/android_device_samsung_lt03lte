@@ -93,6 +93,17 @@ on fs
 
 # USB Composite for Samsung USB Driver
 
+# adb only (fallback used by USB manager / recovery-like states).
+# Overrides the generic Google IDs written by /system/etc/init/hw/init.usb.rc
+on property:sys.usb.config=adb && property:sys.usb.configfs=0
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 04E8
+    write /sys/class/android_usb/android0/idProduct 685E
+    write /sys/class/android_usb/android0/functions adb
+    write /sys/class/android_usb/android0/enable 1
+    start adbd
+    setprop sys.usb.state ${sys.usb.config}
+
 on property:sys.usb.config=mtp,conn_gadget
     write /sys/class/android_usb/android0/enable 0
     write /sys/class/android_usb/android0/idVendor 04E8
@@ -111,7 +122,6 @@ on property:sys.usb.config=mtp,conn_gadget,adb
     write /sys/class/android_usb/android0/enable 1
     start adbd
     setprop sys.usb.state ${sys.usb.config}
-
 on property:sys.usb.config=mtp
     write /sys/class/android_usb/android0/enable 0
     write /sys/class/android_usb/android0/idVendor 04E8
@@ -120,15 +130,6 @@ on property:sys.usb.config=mtp
     write /sys/class/android_usb/android0/functions mtp,acm
     write /sys/class/android_usb/android0/enable 1
     setprop sys.usb.state ${sys.usb.config}
-
-#on property:sys.usb.config=mtp,adb
-#    write /sys/class/android_usb/android0/enable 0
-#    write /sys/class/android_usb/android0/idVendor 04E8
-#    write /sys/class/android_usb/android0/idProduct 6860
-#    write /sys/class/android_usb/android0/functions mtp,adb
-#    write /sys/class/android_usb/android0/enable 1
-#    start adbd
-#    setprop sys.usb.state ${sys.usb.config}
 
 on property:sys.usb.config=mtp,adb
     write /sys/class/android_usb/android0/enable 0

@@ -81,6 +81,7 @@ PRODUCT_COPY_FILES += \
 # Ramdisk
 PRODUCT_PACKAGES += \
     fstab.qcom \
+    init.baseband.sh \
     init.qcom.rc \
     init.qcom.usb.rc \
     init.target.rc \

@@ -129,6 +129,12 @@ on post-fs-data
 
     mkdir /data/misc/bluetooth 0770 bluetooth bluetooth
 
+    # Create directories for mpdecision/perfd (mpctl socket, default_values)
+    mkdir /data/misc/perfd 2770 root system
+    chmod 2770 /data/misc/perfd
+    mkdir /data/system/perfd 2770 root system
+    chmod 2770 /data/system/perfd
+
     # Create the directories used by the Wireless subsystem
     mkdir /data/vendor/wifi 0770 wifi wifi
     mkdir /data/vendor/wifi/wpa 0770 wifi wifi
@@ -220,10 +226,13 @@ on post-fs-data
     chown system radio /sys/class/sec/sec_epen/epen_gestures
 
 # permissions for bluetooth.
+    mkdir /efs/bluetooth 0775 radio system
+    chown radio system /efs/bluetooth
+    chmod 0775 /efs/bluetooth
     setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
     chown bluetooth bluetooth ro.bt.bdaddr_path
     chown radio bluetooth /efs/bluetooth/bt_addr
-    chmod 0640 /efs/bluetooth/bt_addr
+    chmod 0664 /efs/bluetooth/bt_addr
     restorecon_recursive /efs/bluetooth
     chown bluetooth bluetooth /dev/ttyHS0
     chmod 0660 /dev/ttyHS0
@@ -492,3 +501,14 @@ on property:persist.sys.ssr.restart_level=3
 
 on property:apexd.status=ready
     mount none /system/etc/swcodec/ld.config.txt /apex/com.android.media.swcodec/etc/ld.config.txt bind
+
+# Publish the baseband version from the modem image (see init.baseband.sh)
+service vendor.baseband_version /vendor/bin/init.baseband.sh
+    class main
+    user system
+    group system
+    oneshot
+    disabled
+
+on boot
+    start vendor.baseband_version

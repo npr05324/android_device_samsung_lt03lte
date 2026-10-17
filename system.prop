@@ -69,3 +69,13 @@ persist.gps.qc_nlp_in_use=0
 ro.gps.agps_provider=1
 ro.qc.sdk.izat.premium_enabled=0
 ro.qc.sdk.izat.service_mask=0x0
+
+# USB: release builds boot with MTP only; adb has to be enabled from
+# Developer options and every host authorized on the device (ro.adb.secure=1)
+persist.sys.usb.config=mtp
+sys.usb.ffs.aio_compat=1
+persist.sys.usb.ffs.aio_compat=1
+
+# Subsystem Restart (SSR) - Restart related subsystem only, prevent SoC kernel panic
+persist.sys.ssr.restart_level=3
+
