@@ -120,7 +120,7 @@ device/samsung/lt03lte/twrp/build_twrp.sh <TWRP 램디스크 디렉터리> <출�
 ROM 과 같은 커널 + 정적 mkfs/fsck.f2fs + `/data` F2FS fstab 으로 recovery.img 와 Odin 용 tar.md5 를 만든다.
 ROM 커널을 바꾸면 TWRP 도 다시 만든다 (`out/target/product/lt03lte/kernel` 이 target-files 의 `BOOT/kernel` 과 같은지 확인).
 
-### Odin 전체 패키지 (BL / AP / CP / CSC / HOME_CSC)
+### Odin 전체 패키지 (BL / AP / CP)
 
 ```bash
 device/samsung/lt03lte/tools/build_odin.sh <signed target_files zip> <TWRP recovery.img> \
@@ -132,14 +132,11 @@ device/samsung/lt03lte/tools/build_odin.sh <signed target_files zip> <TWRP recov
 | `AP_P605S_LineageOS-18.1-KNPA-GOV_<날짜>.tar.md5` | boot.img (ROM 커널), recovery.img (TWRP), system.img.ext4 (target-files 의 sparse 이미지 = OTA 와 동일) |
 | `BL_P605SKSUCQA2_….tar.md5` | 정품 부트로더 (aboot/sbl1/rpm/tz/sdi/NON-HLOS) 그대로 |
 | `CP_P605SKSUANK1_….tar.md5` | 정품 모뎀 (modem.bin) 그대로 |
-| `CSC_P605S_LineageOS-…tar.md5` | 빈 cache.img.ext4 + `/cache/recovery/command` = `--wipe_data` (다음 리커버리 진입 시 공장 초기화) |
-| `HOME_CSC_P605S_LineageOS-…tar.md5` | 빈 cache.img.ext4 (데이터 유지) |
 
 - 부트로더는 CQA2 (P605S 최종 펌웨어) 와 같은 버전이라야 한다. Samsung 부트로더는 다운그레이드를 거부한다.
-- 정품 CSC 는 쓰지 않는다. 정품 cache 이미지의 `recovery/command` 가 `sec_csc.zip` 설치를 지시해서
-  TWRP 가 Samsung CSC 파일을 LineageOS `/system` 위에 덮어쓴다.
-- CSC 의 초기화 명령은 리커버리로 들어갈 때만 실행된다. Android 가 먼저 부팅되면
-  `RecoverySystem.handleAftermath()` 가 `/cache/recovery` 를 비우므로 명령이 남지 않는다.
+- CSC 는 넣지 않는다 (cache / data 는 건드리지 않고 초기화는 TWRP 에서 한다). 정품 CSC 는 쓰면 안 된다.
+  정품 cache 이미지의 `recovery/command` 가 `sec_csc.zip` 설치를 지시해서 TWRP 가 Samsung CSC 파일을
+  LineageOS `/system` 위에 덮어쓴다.
 - EFS / MODEMST / PERSIST / PARAM (IMEI·보정값) 과 PIT 는 넣지 않는다 (재파티션 없음).
 
 ## 5. 설치
@@ -152,11 +149,11 @@ device/samsung/lt03lte/tools/build_odin.sh <signed target_files zip> <TWRP recov
 
 ### (b) Odin 전체 패키지
 
-1. 다운로드 모드로 들어가 Odin 에 BL / AP / CP / CSC (데이터 유지 시 HOME_CSC) 를 넣는다.
+1. 다운로드 모드로 들어가 Odin 에 BL / AP / CP 를 넣는다 (CSC 칸은 비운다).
    Options 에서 **Auto Reboot 해제**, Re-Partition 은 해제 상태 그대로 두고 Start.
 2. 완료 후 기기를 끄고 Android 를 거치지 않고 바로 리커버리(TWRP)로 들어간다.
-   CSC 를 썼으면 TWRP 가 공장 초기화를 실행한다 (처음 TWRP 를 쓰면 system 읽기 전용 질문에 먼저 답한다).
-3. 정품/다른 ROM 에서 처음 넘어오는 경우 TWRP 에서 Format Data (F2FS) 를 한 번 한다 (ext4 로 남아 있어도 부팅은 됨).
+3. 새로 설치하는 경우 TWRP 에서 Format Data (F2FS) 또는 Wipe > Factory Reset 을 한다
+   (같은 LineageOS 위에 덮어쓰는 경우는 생략 가능).
 4. GApps 가 필요하면 이 단계에서 TWRP 로 설치한 뒤 재부팅한다.
 
 ## 6. 작업 내용

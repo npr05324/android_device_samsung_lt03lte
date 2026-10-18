@@ -3,17 +3,14 @@
 # Copyright (C) 2026 The LineageOS Project
 # SPDX-License-Identifier: Apache-2.0
 #
-# Builds an Odin (BL/AP/CP/CSC/HOME_CSC) package for SM-P605S from a signed
-# target-files zip.
+# Builds an Odin (BL/AP/CP) package for SM-P605S from a signed target-files zip.
 #
-#  AP       boot.img (ROM kernel), recovery.img (TWRP), system.img.ext4
-#  BL       stock bootloader tar (aboot/sbl1/rpm/tz/sdi/NON-HLOS), unmodified
-#  CP       stock modem tar (modem.bin), unmodified
-#  CSC      clean cache.img.ext4 + /cache/recovery/command "--wipe_data"
-#           (the recovery factory-resets /data on its next start)
-#  HOME_CSC clean cache.img.ext4 only (keeps /data)
+#  AP  boot.img (ROM kernel), recovery.img (TWRP), system.img.ext4
+#  BL  stock bootloader tar (aboot/sbl1/rpm/tz/sdi/NON-HLOS), unmodified
+#  CP  stock modem tar (modem.bin), unmodified
 #
-# The stock CSC is not used: its cache image makes the recovery install
+# No CSC: /cache and /data are left alone (factory reset from TWRP). The stock
+# CSC must not be used, its cache image makes the recovery install
 # sec_csc.zip (Samsung CSC files) on top of /system.
 #
 # Usage: build_odin.sh <signed target_files zip> <TWRP recovery.img> \
@@ -36,7 +33,6 @@ TOP="$(cd "$HERE/../../../.." && pwd)"
 HOST="$TOP/out/host/linux-x86"
 export PATH="$HOST/bin:$PATH" LD_LIBRARY_PATH="$HOST/lib64"
 
-CACHE_SIZE=209715200
 SYSTEM_SIZE=2566914048
 
 STOCK_BL="$(ls "$STOCK_DIR"/BL_*.tar.md5 | head -1)"
@@ -68,7 +64,7 @@ EOF
 }
 
 echo "Extracting target files"
-unzip -q -o "$TARGET_FILES" IMAGES/boot.img IMAGES/system.img META/file_contexts.bin -d "$WORK/tf"
+unzip -q -o "$TARGET_FILES" IMAGES/boot.img IMAGES/system.img -d "$WORK/tf"
 check_sparse "$WORK/tf/IMAGES/system.img" $SYSTEM_SIZE
 
 # Same date as the signed OTA (lineage_lt03lte-signed-target_files-YYYYMMDD.zip),
@@ -80,17 +76,6 @@ if [ -z "$DATE" ]; then
 fi
 TAG="P605S_LineageOS-18.1-KNPA-GOV_$DATE"
 
-echo "Building cache images"
-mkdir -p "$WORK/cache_csc/recovery" "$WORK/cache_home"
-printf -- '--wipe_data\n' > "$WORK/cache_csc/recovery/command"
-chown -R 1000:2001 "$WORK/cache_csc/recovery"
-chmod 0770 "$WORK/cache_csc/recovery"
-for v in csc home; do
-    mkuserimg_mke2fs -s "$WORK/cache_$v" "$WORK/cache_$v.img" ext4 /cache $CACHE_SIZE \
-        "$WORK/tf/META/file_contexts.bin" -T 1230768000 -L cache >/dev/null
-    check_sparse "$WORK/cache_$v.img" $CACHE_SIZE
-done
-
 rm -f "$OUT_DIR"/*.tar.md5
 mkdir -p "$WORK/pkg"
 
@@ -99,12 +84,6 @@ ln "$WORK/tf/IMAGES/boot.img" "$WORK/pkg/boot.img"
 cp "$TWRP_IMG" "$WORK/pkg/recovery.img"
 ln "$WORK/tf/IMAGES/system.img" "$WORK/pkg/system.img.ext4"
 make_tar_md5 "AP_$TAG" boot.img recovery.img system.img.ext4
-
-echo "Packing CSC / HOME_CSC"
-mv "$WORK/cache_csc.img" "$WORK/pkg/cache.img.ext4"
-make_tar_md5 "CSC_$TAG" cache.img.ext4
-mv "$WORK/cache_home.img" "$WORK/pkg/cache.img.ext4"
-make_tar_md5 "HOME_CSC_$TAG" cache.img.ext4
 
 echo "Copying stock BL / CP"
 cp "$STOCK_BL" "$STOCK_CP" "$OUT_DIR/"
