@@ -6,6 +6,7 @@
 | Android | LineageOS 18.1 (Android 11), 32-bit (armv7-a-neon) |
 | 커널 | 3.4.113 — `kernel/samsung/msm8974` (`lineage-18.1` 브랜치), defconfig `lineage_lt03lte_skt_defconfig` |
 | 리커버리 | TWRP 3.x (`twrp/build_twrp.sh` 로 F2FS 지원 재패키징) |
+| 릴리즈 | `lineage-18.1-20261018-RELEASE-lt03lte-signed.zip` (RC2 확정, user / release-keys) |
 | 같은 하드웨어의 Ubuntu Touch 빌드 | `device/samsung/lt03lte_halium` (Readme_Ubuntu_Touch.md) |
 
 ## 1. 빌드 조건
@@ -117,12 +118,46 @@ device/samsung/lt03lte/twrp/build_twrp.sh <TWRP 램디스크 디렉터리> <출�
 ```
 
 ROM 과 같은 커널 + 정적 mkfs/fsck.f2fs + `/data` F2FS fstab 으로 recovery.img 와 Odin 용 tar.md5 를 만든다.
+ROM 커널을 바꾸면 TWRP 도 다시 만든다 (`out/target/product/lt03lte/kernel` 이 target-files 의 `BOOT/kernel` 과 같은지 확인).
+
+### Odin 전체 패키지 (BL / AP / CP / CSC / HOME_CSC)
+
+```bash
+device/samsung/lt03lte/tools/build_odin.sh <signed target_files zip> <TWRP recovery.img> \
+    <정품 펌웨어 디렉터리 (BL_*.tar.md5, CP_*.tar.md5)> <출력 디렉터리>
+```
+
+| 파일 | 내용 |
+|---|---|
+| `AP_P605S_LineageOS-18.1-KNPA-GOV_<날짜>.tar.md5` | boot.img (ROM 커널), recovery.img (TWRP), system.img.ext4 (target-files 의 sparse 이미지 = OTA 와 동일) |
+| `BL_P605SKSUCQA2_….tar.md5` | 정품 부트로더 (aboot/sbl1/rpm/tz/sdi/NON-HLOS) 그대로 |
+| `CP_P605SKSUANK1_….tar.md5` | 정품 모뎀 (modem.bin) 그대로 |
+| `CSC_P605S_LineageOS-…tar.md5` | 빈 cache.img.ext4 + `/cache/recovery/command` = `--wipe_data` (다음 리커버리 진입 시 공장 초기화) |
+| `HOME_CSC_P605S_LineageOS-…tar.md5` | 빈 cache.img.ext4 (데이터 유지) |
+
+- 부트로더는 CQA2 (P605S 최종 펌웨어) 와 같은 버전이라야 한다. Samsung 부트로더는 다운그레이드를 거부한다.
+- 정품 CSC 는 쓰지 않는다. 정품 cache 이미지의 `recovery/command` 가 `sec_csc.zip` 설치를 지시해서
+  TWRP 가 Samsung CSC 파일을 LineageOS `/system` 위에 덮어쓴다.
+- CSC 의 초기화 명령은 리커버리로 들어갈 때만 실행된다. Android 가 먼저 부팅되면
+  `RecoverySystem.handleAftermath()` 가 `/cache/recovery` 를 비우므로 명령이 남지 않는다.
+- EFS / MODEMST / PERSIST / PARAM (IMEI·보정값) 과 PIT 는 넣지 않는다 (재파티션 없음).
 
 ## 5. 설치
+
+### (a) TWRP + ROM zip
 
 1. Odin/heimdall 로 TWRP 를 recovery 에 플래시한다.
 2. TWRP 에서 Format Data (F2FS) 후 ROM zip 을 설치한다 (GApps 는 OpenGApps arm 11.0 nano 확인됨).
 3. 첫 부팅 후 설정 마법사를 끝내야 모바일 데이터가 켜진다.
+
+### (b) Odin 전체 패키지
+
+1. 다운로드 모드로 들어가 Odin 에 BL / AP / CP / CSC (데이터 유지 시 HOME_CSC) 를 넣는다.
+   Options 에서 **Auto Reboot 해제**, Re-Partition 은 해제 상태 그대로 두고 Start.
+2. 완료 후 기기를 끄고 Android 를 거치지 않고 바로 리커버리(TWRP)로 들어간다.
+   CSC 를 썼으면 TWRP 가 공장 초기화를 실행한다 (처음 TWRP 를 쓰면 system 읽기 전용 질문에 먼저 답한다).
+3. 정품/다른 ROM 에서 처음 넘어오는 경우 TWRP 에서 Format Data (F2FS) 를 한 번 한다 (ext4 로 남아 있어도 부팅은 됨).
+4. GApps 가 필요하면 이 단계에서 TWRP 로 설치한 뒤 재부팅한다.
 
 ## 6. 작업 내용
 
@@ -133,12 +168,15 @@ ROM 과 같은 커널 + 정적 mkfs/fsck.f2fs + `/data` F2FS fstab 으로 recove
 - eDP 패널 링크 트레이닝/전원 차단 지연 보정
 - 진동 세기 sysfs (`intensity`, 0-10000), vibrator HAL 1.3
 - 배터리: 충전기 CE 토글 경로 수정, 충전 제한 `batt_charge_limit`(50-100), fuel gauge 사이클/SOH 노출
+- bq24260 충전기 `online` 속성 보고 (healthd/uevent 오류 로그 제거), mdss 미지원 ioctl 로그 debug 레벨로 하향
 - gcc-wrapper python3, `-Wmaybe-uninitialized` 무시
 
 ### 공통 (`device/samsung/msm8974-common`)
 - libril: 레거시 radio state 매핑, BASEBAND_VERSION 캐시(모뎀 크래시 원인 제거), CDMA 구독 요청 무시,
   Samsung IMS 등록 unsol(11027) 추적 → VoLTE 등록 시에만 PS 다이얼, IMS SMS 비트 반영, 통화 종료 원인 파싱 수정
 - GPS: libdsi_netctrl 스텁으로 loc_api v02 활성화, xtra2, gps_debug.conf
+- 센서: Samsung 블롭 `GeomagneticSensor::readEvents()` 가 요청보다 많은 이벤트를 써서 poll 루프가 멈추는 버그를
+  multihal 에서 vtable 래퍼로 우회 (`sensors/BlobFixups.cpp`; 증상: 모든 센서·자동 회전 정지, HAL·logd CPU 과점유)
 - HAL: vibrator 1.3, sensors, libshim_camera/atomic, 사용하지 않는 livedisplay 인터페이스 제거(system_server watchdog)
 - adbd FunctionFS 레거시 모드 (3.4 커널에 AIO 없음), sepolicy 보강
 
@@ -165,4 +203,6 @@ ROM 과 같은 커널 + 정적 mkfs/fsck.f2fs + `/data` F2FS fstab 으로 recove
 | 카메라 (전/후면), 센서 (가속/자이로/지자기/조도/그립/홀) | 동작 |
 | 진동, 배터리 충전 제한 | 동작 |
 | SELinux | enforcing |
+| 자동 회전 | 동작 (RC2 에서 센서 블롭 버그 우회) |
+| RCS (Google 메시지 채팅) | 미지원 — SKT 가 차단 (오류 코드 1005) |
 | 3.4 커널 load average 약 10 | 커널 스레드 D 상태로 인한 표시상 값, 실제 부하 아님 |
