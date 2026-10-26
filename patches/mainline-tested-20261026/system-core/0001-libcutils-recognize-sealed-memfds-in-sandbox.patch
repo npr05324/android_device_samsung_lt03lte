@@ -1,0 +1,40 @@
+From 3cd368fe13898befe47a0b21bdd08a9d4ae12c51 Mon Sep 17 00:00:00 2001
+From: Cathode <npr05324@gmail.com>
+Date: Mon, 26 Oct 2026 09:05:26 +0900
+Subject: [PATCH] libcutils: recognize sealed memfds when sandbox blocks
+ readlink
+
+WebView renderers deny proc fd readlink with EPERM. Falling back to ashmem ioctls misidentifies sealed memfds and aborts rendering when /dev/ashmem is present. Keep checking the required size seals when readlink is denied.
+
+Change-Id: Ifc42f0ea9fee1c9d5b7fc89434155de7215e0ca0
+---
+ libcutils/ashmem-dev.cpp | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/libcutils/ashmem-dev.cpp b/libcutils/ashmem-dev.cpp
+index 4d3a70a..3d161c4 100644
+--- a/libcutils/ashmem-dev.cpp
++++ b/libcutils/ashmem-dev.cpp
+@@ -198,11 +198,14 @@ static bool is_memfd_fd(int fd) {
+     std::string fd_path = android::base::StringPrintf("/proc/self/fd/%d", fd);
+     std::string result;
+     if (!android::base::Readlink(fd_path, &result)) {
+-        ALOGE("readlink(%s) failed: %m", fd_path.c_str());
+-        return false;
+-    }
+-
+-    if (!result.starts_with("/memfd:")) {
++        if (errno != EPERM && errno != EACCES) {
++            ALOGE("readlink(%s) failed: %m", fd_path.c_str());
++            return false;
++        }
++        // Inside a seccomp sandbox (e.g. WebView/Chromium renderer),
++        // readlinkat(/proc/self/fd/N) is blocked with EPERM.
++        // Fall through to verify via F_GET_SEALS below.
++    } else if (!result.starts_with("/memfd:")) {
+         return false;
+     }
+ 
+-- 
+2.47.3
+

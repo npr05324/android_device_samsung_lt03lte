@@ -1,0 +1,174 @@
+From 264a56ce914e6d9c18ca31797369563209ca69b5 Mon Sep 17 00:00:00 2001
+From: Cathode <npr05324@gmail.com>
+Date: Mon, 26 Oct 2026 09:30:05 +0900
+Subject: [PATCH] tools: verify the acoustic test pattern in recorded PCM
+
+Check three tone bursts against their following silence instead of inferring sound from ALSA counters. Validate detection with delayed noisy input and reject continuous tones, noise-only input, and the zero-valued tablet recording. Record the separately device-tested WebView fix and remaining hardware validation limits.
+---
+ docs/VALIDATION-20261026.md | 49 +++++++++++++++++++
+ tools/acoustic-check.py     | 97 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 146 insertions(+)
+ create mode 100644 docs/VALIDATION-20261026.md
+ create mode 100644 tools/acoustic-check.py
+
+diff --git a/docs/VALIDATION-20261026.md b/docs/VALIDATION-20261026.md
+new file mode 100644
+index 0000000..a18b002
+--- /dev/null
++++ b/docs/VALIDATION-20261026.md
+@@ -0,0 +1,49 @@
++# lt03lte validation, 2026-10-26
++
++## WebView rendering
++
++Platform change: `system/core` commit `3cd368f`,
++`libcutils: recognize sealed memfds when sandbox blocks readlink`.
++
++On the tablet, WebView 155 failed to render because its sandbox denied
++`readlink(/proc/self/fd/N)` with EPERM. libcutils misclassified a sealed memfd
++as ashmem and aborted the renderer. The change permits the existing
++`F_GET_SEALS` check after EPERM/EACCES, retaining the mandatory grow/shrink
++seals. Other readlink errors still fail.
++
++The corrected library was temporarily bind-mounted on the running tablet.
++After restarting zygote, HTML and a JavaScript/Canvas animation rendered
++successfully, with the renderer process remaining alive.
++
++The full system image subsequently built successfully. Its libcutils matches
++the build staging file; disassembly confirms the permission-error fallback
++and required seal checks. The signed recovery package passed CRC and image
++hash checks. The rebuilt image has not been installed or boot-tested.
++
++## Acoustic analysis utility
++
++`tools/acoustic-check.py` analyzes an actual PCM16 WAV recording for the test
++sequence: 700 Hz, silence, 1100 Hz, silence, 1700 Hz, silence; one second per
++segment. It checks tone energy, separation from the following silence, and
++the proportion of signal power at each expected frequency.
++
++Checks performed:
++
++- Existing tablet recording: all samples zero; rejected.
++- Original generated stimulus: all three tones detected (analysis sanity check).
++- Synthetic delayed stimulus with noise: detected.
++- Synthetic continuous tones without the silence pattern: rejected.
++- Synthetic noise alone: rejected.
++
++These checks validate the analysis utility, not tablet speaker or microphone
++operation. A new physical microphone recording must still pass after the
++codec fixes are tested.
++
++## Changes excluded from the tested set
++
++The microphone/codec corrections only passed compilation. Speaker audibility,
++microphone input, sleep/resume stability, and VoLTE bidirectional call audio
++remain unverified. The tablet lost USB connectivity during a sleep/wake test;
++this does not establish whether the kernel hung or remained suspended.
++
++No unverified kernel changes are included with this validation commit.
+diff --git a/tools/acoustic-check.py b/tools/acoustic-check.py
+new file mode 100644
+index 0000000..40fb85d
+--- /dev/null
++++ b/tools/acoustic-check.py
+@@ -0,0 +1,97 @@
++#!/usr/bin/env python3
++"""Look for the 700/silence/1100/silence/1700/silence test in PCM16 WAV.
++
++This measures a recording; it does not infer sound from ALSA stream counters.
++Exit 0 means all three tones passed, 1 means unverified, 2 means invalid input.
++"""
++
++import argparse
++import array
++import json
++import math
++import statistics
++import sys
++import wave
++
++
++TONES = (700, 1100, 1700)
++
++
++def tone_power(samples, frequency, rate):
++    coefficient = 2 * math.cos(2 * math.pi * frequency / rate)
++    previous = older = 0.0
++    for value in samples:
++        current = value + coefficient * previous - older
++        older, previous = previous, current
++    power = previous * previous + older * older - coefficient * previous * older
++    return max(0.0, 2 * power / len(samples) ** 2)
++
++
++def analyze(path):
++    with wave.open(path, "rb") as recording:
++        if recording.getsampwidth() != 2 or recording.getcomptype() != "NONE":
++            raise ValueError("requires uncompressed signed 16-bit PCM")
++        channels, rate = recording.getnchannels(), recording.getframerate()
++        # Limit memory use even if a recorder left an unfinalized WAV header.
++        values = array.array("h", recording.readframes(rate * 60))
++    if sys.byteorder != "little":
++        values.byteswap()
++    if channels < 1 or rate < 2 * max(TONES):
++        raise ValueError("invalid channel count or insufficient sample rate")
++    mono = [sum(values[i:i + channels]) / channels
++            for i in range(0, len(values) - channels + 1, channels)]
++    frames_per_bin = rate // 10
++    if len(mono) < 60 * frames_per_bin:
++        raise ValueError("requires at least six seconds of recording")
++    bins = []
++    for index in range(len(mono) // frames_per_bin):
++        samples = mono[index * frames_per_bin:(index + 1) * frames_per_bin]
++        bins.append((sum(v * v for v in samples) / len(samples),
++                     [tone_power(samples, f, rate) for f in TONES]))
++
++    best = None
++    for onset in range(len(bins) - 59):
++        measurements = []
++        for tone_index, frequency in enumerate(TONES):
++            begin = onset + tone_index * 20
++            # Omit tone edges and room decay near each transition.
++            active = bins[begin + 2:begin + 8]
++            silent = bins[begin + 12:begin + 18]
++            signal = statistics.median(b[1][tone_index] for b in active)
++            background = statistics.median(b[1][tone_index] for b in silent)
++            total = statistics.median(b[0] for b in active)
++            ratio = (signal + 1) / (background + 1)
++            fraction = signal / max(total, 1)
++            rms = math.sqrt(signal)
++            measurements.append({"hz": frequency, "tone_rms": round(rms, 2),
++                                 "active_to_silence": round(ratio, 2),
++                                 "fraction_of_power": round(fraction, 4),
++                                 "passed": rms >= 5 and ratio >= 8 and fraction >= 0.08})
++        score = min(min(m["tone_rms"] / 5, m["active_to_silence"] / 8,
++                        m["fraction_of_power"] / 0.08) for m in measurements)
++        candidate = {"detected": all(m["passed"] for m in measurements),
++                     "onset_seconds": onset / 10, "tones": measurements}
++        if best is None or score > best[0]:
++            best = score, candidate
++
++    return {"file": path, "sample_rate": rate, "channels": channels,
++            "seconds": round(len(mono) / rate, 3),
++            "peak": max(abs(v) for v in mono),
++            "rms": round(math.sqrt(sum(v * v for v in mono) / len(mono)), 2),
++            **best[1]}
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("recording", help="PCM16 WAV containing the six-second test")
++    args = parser.parse_args()
++    try:
++        result = analyze(args.recording)
++    except (OSError, ValueError, wave.Error, EOFError) as error:
++        parser.exit(2, f"{error}\n")
++    print(json.dumps(result, indent=2))
++    return 0 if result["detected"] else 1
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+-- 
+2.47.3
+
