@@ -13,9 +13,10 @@ existing device tree; it does not turn that tree into a complete mainline port.
 The patch keeps recognizing sealed memfds when a sandbox denies proc-fd
 readlink. Required grow/shrink seals remain checked. On the tablet, the fixed
 library restored HTML and JavaScript/Canvas rendering in WebView 155.
-The subsequently rebuilt system image and signed recovery package passed
-build, image-content, CRC, and hash checks; that rebuilt image has not been
-installed or boot-tested.
+The subsequently rebuilt system image passed build, EROFS, CRC and hash
+checks. A follow-up system image including the USB fixes below was installed
+and boot-tested on kernel #54. External HTTPS and HTML/JavaScript/Canvas
+rendering passed again, including Canvas pixel color and DOM layout checks.
 
 ## Recording analysis and validation notes
 
@@ -30,8 +31,28 @@ It detected the reference stimulus and a delayed noisy synthetic sequence;
 it rejected continuous tones, noise alone, and the actual zero-valued tablet
 recording. These validate the utility, not physical speaker/microphone audio.
 
+## Active USB and serial fallback
+
+- Patch: `workspace/0002-active-usb-and-console-fallback.patch`
+- Target: the mainline workspace (device sources under
+  `android/device/samsung/lt03lte`), not this legacy tree root.
+- Original commit: fc987c5c532715e236773cb34e59c54be8d55768.
+- Apply after the first workspace patch with `git am`.
+
+Init starts a board service that holds a bounded wake lock only while USB
+is active and a gadget is bound. The serial fallback waits for FunctionFS
+readiness, preserving the console during adbd restart. Device tests covered
+screen-off debugging, idle with no ADB commands, unbind release/reacquire,
+serial fallback while adbd was stopped, and restoration to adb. The system
+was installed and rebooted; installed hashes matched the package, the service
+started automatically, and another screen-off idle test passed.
+
+This covers active USB access. Physical unplug, host bus suspend and complete
+system suspend/resume are still unverified. See the patch validation notes
+for failed preliminary tests and the limits of each passing observation.
+
 ## Excluded pending hardware validation
 
-No pending kernel edits, microphone/codec fixes, suspend workarounds, binary
+No pending kernel edits, microphone/codec fixes, unverified suspend changes, binary
 images, raw logs, backups, or unverified VoLTE fixes are included. Physical
 audio, sleep/resume stability, and VoLTE two-way call audio remain incomplete.

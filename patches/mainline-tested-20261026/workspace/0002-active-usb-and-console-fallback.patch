@@ -1,0 +1,237 @@
+From fc987c5c532715e236773cb34e59c54be8d55768 Mon Sep 17 00:00:00 2001
+From: Cathode <npr05324@gmail.com>
+Date: Mon, 26 Oct 2026 18:18:45 +0900
+Subject: [PATCH] lt03lte: preserve active USB debugging across screen off and
+ adbd restart
+
+---
+ android/device/samsung/lt03lte/device.mk      |   1 +
+ .../samsung/lt03lte/prebuilt/usbswitch.sh     |  11 ++
+ .../samsung/lt03lte/prebuilt/usbwake.sh       |  39 +++++++
+ .../lt03lte/rootdir/etc/init.lt03lte.rc       |   5 +
+ docs/VALIDATION-20261026.md                   | 105 ++++++++++++------
+ 5 files changed, 127 insertions(+), 34 deletions(-)
+ create mode 100755 android/device/samsung/lt03lte/prebuilt/usbwake.sh
+
+diff --git a/android/device/samsung/lt03lte/device.mk b/android/device/samsung/lt03lte/device.mk
+index e72ea83..9930aae 100644
+--- a/android/device/samsung/lt03lte/device.mk
++++ b/android/device/samsung/lt03lte/device.mk
+@@ -128,6 +128,7 @@ PRODUCT_COPY_FILES += \
+     $(DEVICE_PATH)/prebuilt/rtcoffset.sh:$(TARGET_COPY_OUT_VENDOR)/bin/rtcoffset.sh \
+     $(DEVICE_PATH)/prebuilt/modem-start.sh:$(TARGET_COPY_OUT_VENDOR)/bin/modem-start.sh \
+     $(DEVICE_PATH)/prebuilt/usbswitch.sh:$(TARGET_COPY_OUT_VENDOR)/bin/usbswitch.sh \
++    $(DEVICE_PATH)/prebuilt/usbwake.sh:$(TARGET_COPY_OUT_VENDOR)/bin/usbwake.sh \
+     $(DEVICE_PATH)/prebuilt/usbconsole.sh:$(TARGET_COPY_OUT_VENDOR)/bin/usbconsole.sh
+ 
+ PRODUCT_COPY_FILES += \
+diff --git a/android/device/samsung/lt03lte/prebuilt/usbswitch.sh b/android/device/samsung/lt03lte/prebuilt/usbswitch.sh
+index 63c1d5a..66dd67c 100755
+--- a/android/device/samsung/lt03lte/prebuilt/usbswitch.sh
++++ b/android/device/samsung/lt03lte/prebuilt/usbswitch.sh
+@@ -7,6 +7,17 @@
+ G=/config/usb_gadget
+ fails=0
+ while true; do
++	# A stopped/restarting adbd has no FunctionFS descriptors. Repeatedly
++	# trying g1 in this state tears down the working serial fallback too.
++	# Leave g2 available until adbd is actually ready to own the UDC.
++	if [ "$(getprop sys.usb.config)" = adb ] && [ "$(getprop sys.usb.ffs.ready)" != 1 ]; then
++		if ! grep -q ci_hdrc $G/g2/UDC; then
++			echo '' > $G/g1/UDC
++			echo ci_hdrc.0 > $G/g2/UDC
++		fi
++		sleep 2
++		continue
++	fi
+ 	if [ "$(getprop sys.usb.config)" = adb ] && ! grep -q ci_hdrc $G/g1/UDC; then
+ 		echo "usbswitch: g1 unbound (g2='$(cat $G/g2/UDC)'), rebinding" > /dev/kmsg
+ 		echo '' > $G/g2/UDC
+diff --git a/android/device/samsung/lt03lte/prebuilt/usbwake.sh b/android/device/samsung/lt03lte/prebuilt/usbwake.sh
+new file mode 100755
+index 0000000..a707d10
+--- /dev/null
++++ b/android/device/samsung/lt03lte/prebuilt/usbwake.sh
+@@ -0,0 +1,39 @@
++#!/system/bin/sh
++# Mainline ChipIdea disconnects an active gadget on system suspend. Match the
++# downstream active-USB suspend blocker, allowing sleep after bus suspend or
++# unplug. A bounded lock also expires if this service dies; init restarts it.
++STATE=/sys/class/udc/ci_hdrc.0/state
++LOCK=lt03lte_usb
++held=0
++trap 'if [ "$held" = 1 ]; then echo "$LOCK" > /sys/power/wake_unlock; fi' EXIT
++trap 'exit 0' HUP INT TERM
++
++while true; do
++    if [ ! -r "$STATE" ]; then
++        sleep 2
++        continue
++    fi
++    state=$(cat "$STATE") || exit 1
++    # ChipIdea can leave state="configured" after gadget unbind. Consult the
++    # bound function too so disabling USB does not retain the blocker.
++    function=$(cat /sys/class/udc/ci_hdrc.0/function) || exit 1
++    [ -n "$function" ] || state=unbound
++    case "$state" in
++        attached|powered|default|addressed|configured)
++            # Timeout is in nanoseconds. Refresh before the ten-second expiry.
++            echo "$LOCK 10000000000" > /sys/power/wake_lock || exit 1
++            if [ "$held" = 0 ]; then
++                echo "usbwake: active USB ($state), holding suspend blocker" > /dev/kmsg
++            fi
++            held=1
++            ;;
++        *)
++            if [ "$held" = 1 ]; then
++                echo "$LOCK" > /sys/power/wake_unlock || exit 1
++                held=0
++                echo "usbwake: USB $state, released suspend blocker" > /dev/kmsg
++            fi
++            ;;
++    esac
++    sleep 2
++done
+diff --git a/android/device/samsung/lt03lte/rootdir/etc/init.lt03lte.rc b/android/device/samsung/lt03lte/rootdir/etc/init.lt03lte.rc
+index 917091e..94c6577 100644
+--- a/android/device/samsung/lt03lte/rootdir/etc/init.lt03lte.rc
++++ b/android/device/samsung/lt03lte/rootdir/etc/init.lt03lte.rc
+@@ -126,6 +126,11 @@ service usbswitch /vendor/bin/usbswitch.sh
+     group root
+     disabled
+ 
++service usbwake /vendor/bin/usbwake.sh
++    class core
++    user root
++    group root
++
+ service usbconsole2 /system/bin/sh -c "while [ ! -c /dev/ttyGS1 ]; do sleep 1; done; exec /system/bin/sh -i < /dev/ttyGS1 > /dev/ttyGS1 2>&1"
+     class core
+     user root
+diff --git a/docs/VALIDATION-20261026.md b/docs/VALIDATION-20261026.md
+index a18b002..52824c8 100644
+--- a/docs/VALIDATION-20261026.md
++++ b/docs/VALIDATION-20261026.md
+@@ -2,48 +2,85 @@
+ 
+ ## WebView rendering
+ 
+-Platform change: `system/core` commit `3cd368f`,
+-`libcutils: recognize sealed memfds when sandbox blocks readlink`.
++Platform change: system/core commit3cd368fe13898befe47a0b21bdd08a9d4ae12c51,
++libcutils: recognize sealed memfds when sandbox blocks readlink.
++WebView155 denied proc-fd readlink with EPERM, causing sealed memfds to be
++misclassified as ashmem. The fallback still requires grow/shrink seals and
++only accepts EPERM/EACCES. The original #55 tablet test covered that failure
++with ashmem present and restored HTML and JavaScript/Canvas rendering.
+ 
+-On the tablet, WebView 155 failed to render because its sandbox denied
+-`readlink(/proc/self/fd/N)` with EPERM. libcutils misclassified a sealed memfd
+-as ashmem and aborted the renderer. The change permits the existing
+-`F_GET_SEALS` check after EPERM/EACCES, retaining the mandatory grow/shrink
+-seals. Other readlink errors still fail.
++The rebuilt62172-byte libcutils (SHA256
++4ebe48f84e2925cf9efad23c91039e1060e203558b5ca9f37f89a50f7678a462)
++was also tested on #54, then installed in the complete system image.
++After normal reboot, external HTTPS loaded and a local page reported60frames,
++correct Canvas pixel color and correct DOM layout. Screenshots confirmed
++rendered pages. Browser and renderer remained alive. A temporary DNS failure
++after zygote-only restart disappeared after the full reboot; do not treat it
++as evidence of an outstanding renderer failure.
+ 
+-The corrected library was temporarily bind-mounted on the running tablet.
+-After restarting zygote, HTML and a JavaScript/Canvas animation rendered
+-successfully, with the renderer process remaining alive.
++## USB debugging across screen off and adbd restart
+ 
+-The full system image subsequently built successfully. Its libcutils matches
+-the build staging file; disassembly confirms the permission-error fallback
+-and required seal checks. The signed recovery package passed CRC and image
+-hash checks. The rebuilt image has not been installed or boot-tested.
++The recovered #55 log contained510 matching s2idle entry/exit pairs. The
++60-second health alarm aligned with physical USB reconnect cadence, narrowing
++the lost connection to repeated sleep/resume rather than a continuous hang.
++This does not prove every USB protocol error has the same cause.
+ 
+-## Acoustic analysis utility
++The board usbwake service refreshes a ten-second kernel wake lock while the
++UDC has an active host state and a bound gadget. It releases for bus suspend,
++unplug and unbind. Checking the function is necessary: ChipIdea's state file
++remained configured after an observed unbind. The timeout bounds the lock
++if the service dies. Init starts the service on every boot.
++
++The serial fallback now waits for FunctionFS readiness before attempting g1.
++An init-owned test stopped adbd: g2 stayed bound at8seconds and16seconds.
++After restarting adbd, live reads confirmed adbd running and g1 bound.
++The original RTC service used to launch the test was restored afterward.
++A preliminary ADB-owned test had killed its own recovery worker when adbd
++stopped; that was a failed test, recovered through an actual root shell on
++the PVE physical USB serial console. PVE USB mapping was restored unchanged.
++
++Device checks:
+ 
+-`tools/acoustic-check.py` analyzes an actual PCM16 WAV recording for the test
+-sequence: 700 Hz, silence, 1100 Hz, silence, 1700 Hz, silence; one second per
+-segment. It checks tone energy, separation from the following silence, and
+-the proportion of signal power at each expected frequency.
++- Screen asleep, display bl_power4, Android stay-on disabled:13 successful
++  ADB samples over125seconds with only lt03lte_usb held, zero system suspends.
++- Final script:90seconds without ADB commands, screen asleep; connection
++  survived with zero system suspends.
++- After system installation and normal reboot, usbwake was running and held
++  lt03lte_usb before the diagnostic recovery lock was acquired.
++- Installed service: another90seconds idle with screen asleep, stay-on false,
++  only lt03lte_usb held; ADB survived and suspend count stayed0.
++- Connection and the same boot ID remained present at18:17, battery43%.
++- A killed temporary watcher released its lock after timeout.
++- Awake4KiB fsync and sync each completed in approximately0.06seconds.
+ 
+-Checks performed:
++Physical unplug, host bus suspend and full system suspend/resume remain
++unverified. This preserves active USB debugging, and does not claim to fix
++GPU suspend recovery or F2FS latency across suspend.
+ 
+-- Existing tablet recording: all samples zero; rejected.
+-- Original generated stimulus: all three tones detected (analysis sanity check).
+-- Synthetic delayed stimulus with noise: detected.
+-- Synthetic continuous tones without the silence pattern: rejected.
+-- Synthetic noise alone: rejected.
++## Installed image
+ 
+-These checks validate the analysis utility, not tablet speaker or microphone
+-operation. A new physical microphone recording must still pass after the
+-codec fixes are tested.
++Full systemimage build passed. Signed recovery package CRC, EROFS integrity,
++raw-image SHA1 and extracted file hashes passed before installation.
++Package SHA256:64021f47ba6b9c3d58cdc579892d58948ecd70c26988aa4ab8d73f4e4ee689bb.
++Recovery installed the system; normal Android startup and changed boot ID
++confirmed the reboot. Installed libcutils, usbwake and usbswitch hashes match
++the verified image. Boot kernel remained #54; no pending codec kernel was
++flashed. Initial post-install dmesg had no WARNING, panic, BUG, checkpoint
++latency stack or system suspend entry. This is a bounded observation.
++
++## Acoustic analysis utility
+ 
+-## Changes excluded from the tested set
++The tools/acoustic-check.py utility checks PCM16 WAV recordings for700Hz,
++silence,1100Hz,silence,1700Hz,silence, one second per segment. It checks tone
++energy, separation from silence and signal power at the expected frequency.
++The reference stimulus and delayed noisy synthetic recording passed.
++Continuous tones, noise alone and the actual all-zero tablet recording failed.
++These validate the utility, not physical speaker or microphone operation.
+ 
+-The microphone/codec corrections only passed compilation. Speaker audibility,
+-microphone input, sleep/resume stability, and VoLTE bidirectional call audio
+-remain unverified. The tablet lost USB connectivity during a sleep/wake test;
+-this does not establish whether the kernel hung or remained suspended.
++## Remaining hardware work
+ 
+-No unverified kernel changes are included with this validation commit.
++Codec corrections passed compilation only. Actual speaker/microphone audio,
++full sleep/resume stability and VoLTE two-way call audio remain unverified.
++The old #55 log had one GPU devfreq warning and361 F2FS checkpoint latency
++stacks during repeated sleep; these require further diagnosis. No pending
++kernel or unverified VoLTE changes are included with this validation commit.
+-- 
+2.47.3
+
