@@ -51,8 +51,27 @@ This covers active USB access. Physical unplug, host bus suspend and complete
 system suspend/resume are still unverified. See the patch validation notes
 for failed preliminary tests and the limits of each passing observation.
 
+## Screen-off memory-pressure mitigation
+
+- Patch: `workspace/0003-enable-zram-for-screen-off-stalls.patch`
+- Target: the mainline workspace device sources under
+  `android/device/samsung/lt03lte`.
+- Original commit: `430ca01644b8e7de7e25eb7a5d1c2d253d6f8261`.
+- Apply after the preceding workspace patches with `git am`.
+
+The installed image had no swap on this 3 GiB device while Launcher and
+RenderThread were being killed under memory pressure. This patch configures
+a 1 GiB zram device with the kernel-supported `lzo-rle` compressor and enables
+it during boot. The equivalent settings were applied to the running tablet:
+zram registered at 1 GiB with priority 32758, and a three-minute screen-off
+cycle woke in 255 ms with PowerManager awake, SurfaceFlinger completing its
+display transition, and a valid 1.05 MB screenshot. No ANR or renderer stall
+occurred during that cycle. The new image itself still needs to be flashed for
+boot-time validation and longer idle soak testing.
+
 ## Excluded pending hardware validation
 
-No pending kernel edits, microphone/codec fixes, unverified suspend changes, binary
-images, raw logs, backups, or unverified VoLTE fixes are included. Physical
-audio, sleep/resume stability, and VoLTE two-way call audio remain incomplete.
+No pending kernel edits, microphone/codec fixes, other unverified suspend
+changes, binary images, raw logs, backups, or unverified VoLTE fixes are
+included. Physical audio, long-duration sleep/resume stability, and VoLTE
+two-way call audio remain incomplete.

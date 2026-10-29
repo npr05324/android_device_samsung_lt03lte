@@ -1,0 +1,40 @@
+From 430ca01644b8e7de7e25eb7a5d1c2d253d6f8261 Mon Sep 17 00:00:00 2001
+From: Cathode <npr05324@gmail.com>
+Date: Thu, 29 Oct 2026 05:29:06 +0900
+Subject: [PATCH] lt03lte: enable zram to prevent screen-off UI stalls
+
+---
+ android/device/samsung/lt03lte/rootdir/etc/fstab.lt03lte   | 1 +
+ android/device/samsung/lt03lte/rootdir/etc/init.lt03lte.rc | 7 +++++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/android/device/samsung/lt03lte/rootdir/etc/fstab.lt03lte b/android/device/samsung/lt03lte/rootdir/etc/fstab.lt03lte
+index a3c452b..a1ce067 100644
+--- a/android/device/samsung/lt03lte/rootdir/etc/fstab.lt03lte
++++ b/android/device/samsung/lt03lte/rootdir/etc/fstab.lt03lte
+@@ -2,3 +2,4 @@
+ /dev/block/by-name/system   /system      erofs   ro                                              wait,first_stage_mount
+ /dev/block/by-name/userdata /data        f2fs    noatime,nosuid,nodev                          wait,check,formattable,latemount
+ /dev/block/by-name/fota     /metadata    ext4    noatime,nosuid,nodev,barrier=1                  wait,first_stage_mount
++/dev/block/zram0            none         swap    defaults                                        zramsize=1073741824
+diff --git a/android/device/samsung/lt03lte/rootdir/etc/init.lt03lte.rc b/android/device/samsung/lt03lte/rootdir/etc/init.lt03lte.rc
+index 94c6577..12c8b0c 100644
+--- a/android/device/samsung/lt03lte/rootdir/etc/init.lt03lte.rc
++++ b/android/device/samsung/lt03lte/rootdir/etc/init.lt03lte.rc
+@@ -137,6 +137,13 @@ service usbconsole2 /system/bin/sh -c "while [ ! -c /dev/ttyGS1 ]; do sleep 1; d
+     group root shell
+ 
+ on boot
++    # This 3 GiB device otherwise runs without swap and eventually lets lmkd
++    # kill Launcher/RenderThread.  MSM8974's current kernel offers lzo-rle and
++    # lzo (not lz4), so select the faster default before fs_mgr sizes zram.
++    write /sys/block/zram0/comp_algorithm lzo-rle
++    swapon_all /vendor/etc/fstab.${ro.hardware}
++    write /proc/sys/vm/swappiness 100
++
+     # Backlight for the lights/display brightness
+     chown system system /sys/class/backlight/lcd-backlight/brightness
+     chmod 0664 /sys/class/backlight/lcd-backlight/brightness
+-- 
+2.47.3
+
